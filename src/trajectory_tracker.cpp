@@ -125,6 +125,10 @@ TrajectoryTracker::create_subscribers()
 void
 TrajectoryTracker::timer_callback()
 {
+  uint64_t before, after;
+  uint64_t total;
+  __asm__ volatile("mrs %0, cntvct_el0" : "=r"(before));
+  
   dynamics::VehicleCommand controls{};
   constexpr double         emergency_accel  = -2.0;
   constexpr double         standstill_accel = -0.5;
@@ -159,6 +163,9 @@ TrajectoryTracker::timer_callback()
   update_blinker_state();
   publisher_vehicle_command->publish( controls );
   last_controls = controls;
+  __asm__ volatile("mrs %0, cntvct_el0" : "=r"(after));
+  total = after - before;
+  RCLCPP_INFO(this->get_logger(), "Time taken timer callback: %ld cycles", total);
 }
 
 void
@@ -190,13 +197,25 @@ TrajectoryTracker::indicators_on( bool left, bool right )
 void
 TrajectoryTracker::trajectory_callback( const dynamics::Trajectory& trajectory )
 {
+  uint64_t before, after;
+  uint64_t total;
+  __asm__ volatile("mrs %0, cntvct_el0" : "=r"(before));
   latest_trajectory = trajectory;
+  __asm__ volatile("mrs	%0, cntvct_el0"	: "=r"(after));
+  total = after - before;
+  RCLCPP_INFO(this->get_logger(), "Time taken trajectory callback: %ld cycles", total);
 }
 
 void
 TrajectoryTracker::vehicle_state_callback( const dynamics::VehicleStateDynamic& state )
 {
+  uint64_t before, after;
+  uint64_t total;
+  __asm__ volatile("mrs %0, cntvct_el0" : "=r"(before));
   latest_vehicle_state = state;
+  __asm__ volatile("mrs	%0, cntvct_el0"	: "=r"(after));
+  total = after - before;
+  RCLCPP_INFO(this->get_logger(), "Time taken vehicle state callback: %ld cycles", total);
 }
 
 } // namespace adore
